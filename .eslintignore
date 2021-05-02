@@ -2,3 +2,5 @@ node_modules
 lib
 public/**/*.js
 public/**/*.js.map
+public/**/*.cjs
+public/**/*.cjs.map
