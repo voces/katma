@@ -19,5 +19,5 @@
 		"types": [ "@types/jest", "@types/node", "enzyme-adapter-preact-pure" ],
 		"noErrorTruncation": true
 	},
-	"include": ["src", "test"]
+	"include": ["src", "test", "scripts"]
 }
