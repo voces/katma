@@ -12,5 +12,4 @@ export default {
 	testRegex: "(/src/.*\\.test)\\.tsx?$",
 	transformIgnorePatterns: [],
 	resolver: "jest-ts-webcompat-resolver",
-	setupFilesAfterEnv: ["./src/engine/ui/preact/tests/setup.ts"],
 };
