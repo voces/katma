@@ -48,6 +48,7 @@ export const patchInState = (
 		}
 
 		player.score = playerData.score;
+		player.crosserPlays = playerData.crosserPlays;
 	});
 	game.players.sort((a, b) => a.id - b.id);
 };

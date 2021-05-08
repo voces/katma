@@ -1,4 +1,5 @@
-import type { ImmediateActionProps } from "../../engine/actions/types";
+import type { ImmediateActionProps } from "webcraft";
+
 import type { Player } from "../players/Player";
 import { isCrosser } from "../typeguards";
 

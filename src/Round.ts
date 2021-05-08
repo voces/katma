@@ -36,6 +36,8 @@ class Round {
 	private tileSystem: TileSystem;
 	private pathingSystem: PathingSystem;
 
+	private ended = false;
+
 	constructor({
 		time,
 		settings,
@@ -62,6 +64,11 @@ class Round {
 		}).addToApp(katma);
 
 		this.pickTeams();
+		logLine(
+			"Round started",
+			this.crossers.map((p) => `${p.username}#${p.id}`),
+			this.defenders.map((p) => `${p.username}#${p.id}`),
+		);
 		this.grantResources();
 		this.spawnUnits();
 	}
@@ -93,15 +100,6 @@ class Round {
 
 	pickTeams(): void {
 		const katma = currentKatma();
-		const placeholder = getPlaceholderPlayer();
-
-		if (this.players.length === 1) {
-			katma.players.push(placeholder);
-			this.players.push(placeholder);
-		} else
-			for (const player of this.players)
-				katma.alliances.set(player, placeholder, "neutral", true);
-
 		const remaining = [...this.players];
 		while (remaining.length) {
 			const lowPlays = Math.min(...remaining.map((p) => p.crosserPlays));
@@ -116,6 +114,10 @@ class Round {
 				this.addCrosser(player);
 			else this.addDefender(player);
 		}
+
+		const placeholderPlaying = this.players.some((p) => p.id === -1);
+		if (!placeholderPlaying)
+			getPlaceholderPlayer().crosserPlays = this.players[0].crosserPlays;
 
 		updateDisplay(katma);
 	}
@@ -145,6 +147,7 @@ class Round {
 		// Place it
 		let maxTries = 8192;
 		while (--maxTries) {
+			// console.log("_spawnUnit", 1, maxTries);
 			const xRand = katma.random() * this.pathingSystem.widthWorld;
 			const yRand = katma.random() * this.pathingSystem.heightWorld;
 
@@ -204,42 +207,51 @@ class Round {
 		this.end();
 	}
 
-	end(): void {
+	end(skipElo = false): void {
+		if (this.ended) return;
+		logLine(
+			"Round ended",
+			this.crossers.map((p) => `${p.username}#${p.id}`),
+			this.defenders.map((p) => `${p.username}#${p.id}`),
+			this.scores,
+		);
+		this.ended = true;
 		const katma = currentKatma();
-		elo({
-			mode: katma.settings.mode,
-			crossers: this.crossers,
-			defenders: this.defenders,
-			scores: this.scores,
-			game: katma,
-		});
 
-		const placeholderIndex = katma.players.indexOf(getPlaceholderPlayer());
-		if (placeholderIndex >= 0) katma.players.splice(placeholderIndex, 1);
+		if (!skipElo)
+			elo({
+				mode: katma.settings.mode,
+				crossers: this.crossers,
+				defenders: this.defenders,
+				scores: this.scores,
+				game: katma,
+			});
+
+		const innerCallback = () => {
+			katma.removeSystem(this.tileSystem);
+			katma.removeSystem(this.pathingSystem);
+			katma.pathingSystem = undefined;
+			this.removeEventListeners();
+			katma.round = undefined;
+		};
+
+		const outerCallback = () => {
+			[...this.sprites].forEach((sprite) => sprite.kill());
+
+			if (skipElo) innerCallback();
+			else katma.setTimeout(innerCallback, 0.25);
+		};
+
+		if (skipElo) outerCallback();
+		else katma.setTimeout(outerCallback, 1);
 
 		if (katma.newPlayers) {
 			katma.newPlayers = false;
 			logLine("synchronizing");
 			katma.synchronizationState = "synchronizing";
 
-			if (katma.isHost)
-				katma.transmit({
-					type: "state",
-					state: katma,
-				});
+			if (katma.isHost) katma.transmit({ type: "state", state: katma });
 		} else katma.lastRoundEnd = katma.lastUpdate;
-
-		katma.setTimeout(() => {
-			[...this.sprites].forEach((sprite) => sprite.kill());
-
-			katma.setTimeout(() => {
-				katma.removeSystem(this.tileSystem);
-				katma.removeSystem(this.pathingSystem);
-				katma.pathingSystem = undefined;
-				this.removeEventListeners();
-				katma.round = undefined;
-			}, 0.25);
-		}, 1);
 	}
 
 	updateResources(delta: number): void {

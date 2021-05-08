@@ -51,19 +51,33 @@ export class Katma extends Game {
 			// Received by the the upon someone connecting after the round ends
 			this.addNetworkListener("state", (e) => this.onState(e));
 			registerNetworkedActionListeners();
+
+			getPlaceholderPlayer();
 		});
 	}
 
-	private onInit: NetworkEventCallback["init"] = ({
-		connections,
-		state: { players: inputPlayers, arena },
-	}) => {
+	private onInit: NetworkEventCallback["init"] = ({ connections, state }) => {
 		if (connections === 0) this.synchronizationState = "synchronized";
 
-		this.setArena(arena);
-
-		patchInState(this, inputPlayers);
+		this.syncState(state);
 	};
+
+	private syncState({
+		players,
+		arena,
+		lastRoundEnd,
+		entityId,
+	}: ReturnType<Katma["toJSON"]>): void {
+		patchInState(this, players);
+
+		this.setArena(arena);
+		logLine("synchronized");
+		this.synchronizationState = "synchronized";
+		this.lastRoundEnd = lastRoundEnd;
+		this.entityId = entityId;
+
+		updateDisplay(this);
+	}
 
 	///////////////////////
 	// Entities
@@ -87,22 +101,22 @@ export class Katma extends Game {
 		return player;
 	}
 
-	private onState: NetworkEventCallback["state"] = ({
-		time,
-		state: { arena, players: inputPlayers, entityId },
-	}) => {
+	onPlayerLeave(player: Player): void {
+		super.onPlayerLeave(player);
+		player.sprites.forEach((s) => s.remove());
+
+		// Clear all entities, except terrain, if no players left
+		if (this.players.every((s) => s.id < 0) && this.round) {
+			logLine("abort round");
+			this.round.end(true);
+			getPlaceholderPlayer().crosserPlays = 0;
+		}
+	}
+
+	private onState: NetworkEventCallback["state"] = ({ time, state }) => {
 		this.update({ time });
-
-		patchInState(this, inputPlayers);
-
-		this.setArena(arena);
+		this.syncState(state);
 		logLine("synchronized");
-		this.synchronizationState = "synchronized";
-		this.lastRoundEnd = time / 1000;
-		this.entityId = entityId;
-		// game.random = new Random( time );
-
-		updateDisplay(this);
 	};
 
 	add(entity: Entity): boolean {
@@ -153,10 +167,9 @@ export class Katma extends Game {
 	start({ time }: { time: number }): void {
 		if (this.round) throw new Error("A round is already in progress");
 
-		const players =
-			this.players.length === 1
-				? [...this.players, getPlaceholderPlayer()]
-				: this.players;
+		const players = this.players.filter((p) => p.id >= 0);
+		if (players.length === 1) players.push(getPlaceholderPlayer());
+
 		const plays = players[0].crosserPlays;
 		const newArena =
 			plays >= 3 &&
@@ -169,18 +182,14 @@ export class Katma extends Game {
 		}
 
 		this.settings.crossers =
-			this.players.length === 3
+			players.length === 3
 				? 1 // hardcode 1v2
-				: Math.ceil(this.players.length / 2); // otherwise just do 1v0, 1v1, 1v2, 2v2, 3v2, 3v3, 4v3, etc
+				: Math.ceil(players.length / 2); // otherwise just do 1v0, 1v1, 1v2, 2v2, 3v2, 3v3, 4v3, etc
 
-		logLine(
-			"Starting round",
-			...this.players.map((p) => `${p.username}#${p.id}`),
-		);
 		new Round({
 			time,
 			settings: this.settings,
-			players: this.players,
+			players,
 		});
 	}
 
@@ -220,14 +229,12 @@ export class Katma extends Game {
 		arena: number;
 		lastRoundEnd: number | undefined;
 		players: ReturnType<Player["toJSON"]>[];
-		round: ReturnType<Round["toJSON"]> | undefined;
 	} {
 		return {
 			...super.toJSON(),
 			arena: this.settings.arenaIndex,
 			lastRoundEnd: this.lastRoundEnd,
 			players: this.players.map((p) => p.toJSON()),
-			round: this.round?.toJSON(),
 		};
 	}
 }

@@ -1,29 +1,31 @@
-import { cliffMap } from "notextures";
 import type { InternalArena } from "webcraft";
-import { stringMap } from "webcraft";
+import { stringMap, stringMapWithRamps } from "webcraft";
 
 export const theDump: InternalArena = {
 	name: "The Dump",
 	// For jumping
-	cliffs: cliffMap(`
+	cliffs: stringMapWithRamps(
+		`
 			000000000
 			011111110
-			01.....10
-			01.....100 000   000
-			01.....1100010000010
-			01......111011010100
-			01......11111001100000
-			01......10011111111110
-			01......1111........10
-			01..................10
-			01..................10
-			01..................10
-			01..................10
-			01..................10
-			0331................10
+			01     10
+			01     100.000...000
+			01     1100010000010
+			01      111011010100
+			01      11111001100000
+			01      10011111111110
+			01      1111        10
+			01                  10
+			01                  10
+			01                  10
+			01                  10
+			01                  10
+			0331                10
 			0333311111111111111110
 			0000000000000000000000
-		`),
+		`,
+		1,
+	),
 	// 0 = open space
 	// 1 = crosser spawn
 	// 2 = crosser target

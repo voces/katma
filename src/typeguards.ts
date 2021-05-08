@@ -1,5 +1,5 @@
-import type { App } from "../core/App";
-import type { Entity } from "../core/Entity";
+import type { App, Entity } from "webcraft";
+
 import type { Crosser } from "./entities/Crosser";
 import type { Defender } from "./entities/Defender";
 import type { Resource } from "./entities/obstructions/Resource";
