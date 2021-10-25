@@ -126,9 +126,8 @@ class Round {
 		for (const team of teamKeys)
 			for (const player of this[team])
 				for (const resource of resourceKeys)
-					player.resources[resource] = this.settings.resources[team][
-						resource
-					].starting;
+					player.resources[resource] =
+						this.settings.resources[team][resource].starting;
 	}
 
 	_spawnUnit(
