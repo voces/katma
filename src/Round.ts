@@ -1,10 +1,13 @@
 import type { Arena, Emitter, Sprite, TileType } from "webcraft";
 import {
 	emitter,
+	Entity,
 	logLine,
 	PathingComponent,
 	PathingSystem,
 	TILE_TYPES,
+	Timer,
+	TimerWindow,
 } from "webcraft";
 
 import { arenas } from "./arenas/index";
@@ -32,6 +35,8 @@ class Round {
 	settings: Settings;
 	arena: Arena;
 	expireAt: number;
+
+	timer: Entity;
 
 	private tileSystem: TileSystem;
 	private pathingSystem: PathingSystem;
@@ -71,6 +76,10 @@ class Round {
 		);
 		this.grantResources();
 		this.spawnUnits();
+		this.timer = new Entity();
+		new Timer(this.timer, () => void 0, settings.duration);
+		new TimerWindow(this.timer, "");
+		katma.add(this.timer);
 	}
 
 	private addCrosser(player: Player): void {
@@ -216,6 +225,8 @@ class Round {
 		);
 		this.ended = true;
 		const katma = currentKatma();
+
+		katma.remove(this.timer);
 
 		if (!skipElo)
 			elo({

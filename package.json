@@ -1,6 +1,6 @@
 {
 	"name": "katma",
-	"version": "1.2.0",
+	"version": "1.2.1",
 	"description": "Minimum viable product of Bulldog client",
 	"scripts": {
 		"build": "node scripts/build.js",
