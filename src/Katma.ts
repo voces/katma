@@ -43,8 +43,8 @@ export class Katma extends Game {
 
 	constructor(network: KatmaNetwork) {
 		super(network);
-		logLine("Creating Katma");
 		withKatma(this, () => {
+			logLine("Creating Katma");
 			this.addNetworkListener("init", (e) => this.onInit(e));
 			this.setArena(Math.floor(this.random() * arenas.length));
 
